@@ -1,0 +1,21 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="AutoReceiver.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="User" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">consignment</Value>
+    </Setting>
+    <Setting Name="Pass" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">consignment</Value>
+    </Setting>
+    <Setting Name="Server" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">AMEND-EPAPP05</Value>
+    </Setting>
+    <Setting Name="Port" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">9411</Value>
+    </Setting>
+    <Setting Name="Plant" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">CONSIGN</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
