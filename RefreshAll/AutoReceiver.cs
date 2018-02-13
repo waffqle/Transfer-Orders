@@ -45,12 +45,12 @@ namespace AutoReceiver {
 
         #region Pack Processing
         private static IEnumerable<TFShipHeadListDataSet.TFShipHeadListRow> GetUnreceivedConsignmentPacks() {
-            logger.Info("Retrieving pending packs...");
+            logger.Info("Retrieving pending packs.");
 
             var packs = transOrderReceipt.GetListBasicSearch(false, 0, 1, out _);
 
             var consignmentPacks = packs.TFShipHeadList.Cast<TFShipHeadListDataSet.TFShipHeadListRow>()
-                                        .Where(t => string.Equals(t.ToPlant, "CONSIGN", StringComparison.InvariantCultureIgnoreCase)).ToList();
+                                        .Where(t => string.Equals(t.ToPlant, "CONSIGN", StringComparison.OrdinalIgnoreCase)).ToList();
             logger.Info($"Found {consignmentPacks.Count} packs.");
 
             return consignmentPacks;
@@ -61,8 +61,9 @@ namespace AutoReceiver {
         /// </summary>
         private static void ProcessPack(TFShipHeadListDataSet.TFShipHeadListRow consignmentPack, List<Bin> traysToInactivate) {
             try {
-                logger.Info($"Processing pack {consignmentPack.PackNum}...");
-                logger.Info($"Fetching order {consignmentPack.ShortChar01}...");
+                logger.Info($"Processing pack: {consignmentPack.PackNum}");
+
+                logger.Info($"Fetching order: {consignmentPack.ShortChar01}");
 
                 var order         = transferOrderEntry.GetByID(consignmentPack.ShortChar01);
                 var warehouseCode = order.TFOrdHed[0].ShortChar10;
@@ -73,10 +74,10 @@ namespace AutoReceiver {
                 if (needBy > DateTime.Today)
                     return;
 
-                logger.Info($"Fetching receipt {consignmentPack.PackNum}...");
+                logger.Info($"Fetching receipt: {consignmentPack.PackNum}");
                 var receipt = transOrderReceipt.GetByID(consignmentPack.PackNum);
 
-                logger.Info($"Found {receipt.PlantTran.Count} receipt lines...");
+                logger.Info($"Found {receipt.PlantTran.Count} receipt lines.");
 
                 foreach (var plantTran in receipt.PlantTran.Cast<TransOrderReceiptDataSet.PlantTranRow>())
                     ProcessLine(traysToInactivate, order, plantTran, warehouseCode, receipt);
@@ -91,9 +92,11 @@ namespace AutoReceiver {
                                         string warehouseCode, TransOrderReceiptDataSet receipt) {
             try {
                 // Get the order line that matches this transaction to retrieve replenishment info.
-                var ordLineDS = order.TFOrdDtl.Cast<TransferOrderEntryDataSet.TFOrdDtlRow>()
-                                     .FirstOrDefault(o => o.TFOrdNum==line.TFOrdNum && o.TFLineNum==line.TFLineNum);
-
+                // Make sure this isn't case sensitive. The cases aren't consistent.
+                var ordLineDS = order.TFOrdDtl.Cast<TransferOrderEntryDataSet.TFOrdDtlRow>().FirstOrDefault(
+                    o => string.Equals(o.TFOrdNum,  line.TFOrdNum,  StringComparison.OrdinalIgnoreCase) &&
+                         string.Equals(o.TFLineNum, line.TFLineNum, StringComparison.OrdinalIgnoreCase));
+                
                 if (ordLineDS==null)
                     throw new Exception("Unable to locate matching order line.");
 
@@ -173,7 +176,7 @@ namespace AutoReceiver {
         private static void UpsertBin(string warehouse, string binNum, string zoneID, string packNum, bool usingReplenishmentBin,
                                       WhseBinDataSet fromBinDS) {
             try {
-                logger.Info($"Upserting {warehouse}/{binNum}...");
+                logger.Info($"Upserting {warehouse}/{binNum}.");
 
                 // Maybe our bin already exists?
                 var toBinDS = whseBin.GetRows($@"WarehouseCode = '{warehouse}' and BinNum = '{binNum}'", "", 0, 1, out _);
@@ -182,7 +185,7 @@ namespace AutoReceiver {
                 if (toBinDS.WhseBin.Count > 0) {
                     logger.Info("Found bin!");
                 } else {
-                    logger.Info("Creating bin...");
+                    logger.Info("Creating bin.");
                     toBinDS = new WhseBinDataSet();
                     whseBin.GetNewWhseBin(toBinDS, warehouse);
                     toBinDS.WhseBin[0].BinNum = binNum;
@@ -192,7 +195,7 @@ namespace AutoReceiver {
                 // Get those fields in sync!
                 // Don't change the properties on a bin that may have already had them specified.
                 if (!usingReplenishmentBin) {
-                    logger.Info("Syncing bin fields...");
+                    logger.Info("Syncing bin fields.");
                     toBinDS.WhseBin[0].Description = fromBinDS.WhseBin[0].Description;
                     toBinDS.WhseBin[0].ZoneID      = zoneID;
                     toBinDS.WhseBin[0].Character04 = packNum;
@@ -215,7 +218,7 @@ namespace AutoReceiver {
         ///     Bins with stuff in them will be ignored.
         /// </summary>
         private static void DeactiveBins(List<Bin> bins) {
-            logger.Info($"Deactivating {bins.Count} bins...");
+            logger.Info($"Deactivating {bins.Count} bins.");
 
             foreach (var bin in bins)
                 DeactivateBin(bin);
@@ -225,7 +228,7 @@ namespace AutoReceiver {
 
         private static void DeactivateBin(Bin bin) {
             try {
-                logger.Info($"Deactivating bin {bin}...");
+                logger.Info($"Deactivating bin {bin}.");
 
                 // Is this a valid bin?
                 partBinSearch.CheckBin(bin.WarehouseCode, bin.BinNum, out var errMsg);
